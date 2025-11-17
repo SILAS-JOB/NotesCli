@@ -1,6 +1,18 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+import { findNotes, getAllNotes, newNote, removeNote, removeAllNotes } from './notes.js';
 
+
+
+const listNotes = notes => {
+    notes.forEach(({id, content, tags}) => {
+        console.log('id', id)
+        console.log('tags', tags)
+        console.log('content', content)
+        console.log('\n')
+
+    })
+}
 
 yargs(hideBin(process.argv))
   .command('new <note>', 'Create a new note', yargs => {
@@ -8,8 +20,10 @@ yargs(hideBin(process.argv))
       type: 'string',
       description: 'The content of the note to create'
     })
-  }, (argv) => {
-    console.log('hello', argv.note)
+  }, async (argv) => {
+    const tags = argv.tags ? argv.tags.split(',') : []
+    const notes = await newNote(argv.note, tags)
+    console.log('New Note !', notes)
   })
   .option('tags', {
     alias: 't',
@@ -17,7 +31,8 @@ yargs(hideBin(process.argv))
     description: 'tags to add to the note'    
   })
   .command('all', 'get all notes', () => {}, async (argv) =>{
-
+    const notes = await getAllNotes()
+    listNotes(notes)
   })
   .command('find <filter>', 'get matching notes', yargs => {
     return yargs.positional('filter', {
@@ -25,7 +40,8 @@ yargs(hideBin(process.argv))
       type: 'string'
     })
   }, async (argv) => {
-
+    const matches = await findNotes(argv.filter)
+    listNotes(matches)
   })
 
   .command('remove <id>', 'remove a note based on the id', yargs => {
@@ -34,7 +50,12 @@ yargs(hideBin(process.argv))
       description: 'The id of the note you want to remove'
     })
   }, async(argv) => {
-
+    const id =  await removeNote(argv.id)
+    if (id != null) {
+      console.log(`Sucessfully removed the note: ${id}`)
+    } else {
+      console.log("Could'nt find the note of specified id")
+    }
   })
 
   .command('web [port]', 'lauch website to see the notes', yargs => {
@@ -49,7 +70,8 @@ yargs(hideBin(process.argv))
   })
 
   .command('clean', 'remove all the notes', () => {}, async (argv) => {
-
+    await removeAllNotes()
+    console.log('All notes have been cleaned')
   })
 
   .demandCommand(1)
